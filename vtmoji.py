@@ -10,6 +10,7 @@ from keras.optimizers import Adam
 from sklearn.model_selection import train_test_split
 
 from model import create_model
+from dataloader import FaceDataset
 
 '''
 Read in the csv data from the fer2013 dataset and load it into a pandas dataframe
@@ -39,29 +40,24 @@ EMOTIONS = {
     6:"neutral"
 }
 
-train_dir = "./data/train.csv"
+data_fpath = "./data/fer2013/fer2013.csv"
 
-df = pd.read_csv(train_dir)
-
-# convert pixel strings into 2d numpy arrays
-#faces = df['pixels'].apply(string_to_image)
-
-pixels = df['pixels'].tolist()
-faces = []
-for sequence in pixels:
-    face = [int(pixel) for pixel in sequence.split()]
-    face = np.asarray(face).reshape(48, 48)
-    face = cv2.resize(face.astype('uint8'), (48, 48))
-    faces.append(face.astype('float32'))
+# get dataset
+dataset = FaceDataset(data_fpath)
+faces, emotions = dataset.load_data()
 
 
-#expand the channel dimension of each image
-faces = np.asarray(faces)
-faces = np.expand_dims(faces, -1)
+data_generator = ImageDataGenerator(
+        featurewise_center=False,
+        featurewise_std_normalization=False,
+        rotation_range=10,
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        zoom_range=.1,
+        horizontal_flip=True
+)
 
 
-#convert labels to categorical matrix
-emotions = pd.get_dummies(df['emotion']).values
 
 # get train-test split
 x_train, x_test, y_train, y_test = train_test_split(faces, emotions, test_size=0.1, random_state=42)
@@ -99,19 +95,27 @@ os.makedirs(tb_logdir)
 tb = TensorBoard(log_dir=tb_logdir)
 callbacks.append(tb)
 
-checkpointer = ModelCheckpoint(tb_logdir, monitor='val_loss', verbose=True, save_best_only=True)
-callbacks.append(checkpointer)
+#checkpointer = ModelCheckpoint(tb_logdir, monitor='val_loss', verbose=True, save_best_only=True)
+#callbacks.append(checkpointer)
+
+flower = data_generator.flow(x_train, y_train, batch_size, shuffle=True)
+
+model.fit_generator(flower, steps_per_epoch=len(x_train) / batch_size, epochs=epochs, verbose=True, callbacks=callbacks, validation_data=(x_val, y_val))
 
 # train the model
-model.fit(np.array(x_train), np.array(y_train), 
+'''
+model.fit_generator(data_generator.flow((np.array(x_train), np.array(y_train), 
     batch_size=batch_size,
     epochs=epochs,
     verbose=True,
     validation_data=(x_test, y_test), 
     shuffle=True,
     callbacks=callbacks
-)
+)))
+'''
 
 scores = model.evaluate(np.array(x_test), np.array(y_test), batch_size=batch_size)
 print(f"Loss: {scores[0]}")
 print(f"Accuracy: {scores[1]}")
+
+model.save(os.path.join(tb_logdir, 'trained'))
