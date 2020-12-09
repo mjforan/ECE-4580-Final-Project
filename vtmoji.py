@@ -2,6 +2,7 @@ import pandas as pd
 import tensorflow as tf
 import numpy as np
 import os
+import cv2
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ReduceLROnPlateau, TensorBoard, ModelCheckpoint, EarlyStopping
 from keras.losses import categorical_crossentropy
@@ -16,17 +17,17 @@ Read in the csv data from the fer2013 dataset and load it into a pandas datafram
 '''
 def string_to_image(pix_str):
     # the pixels column contains string of pixel values
-    arr = pix_str.split()
-
+    face = [int(pixel) for pixel in pix_str.split()]
     # convert to numpy array
-    arr = np.array(arr).astype('float32')
+    face = np.asarray(face).reshape(48, 48)
+    #arr = np.array(arr).astype('float32')
 
     # normalize image
-    arr = arr / 255.0
+    face = face / 255.0
 
     # reshape 1d original data to a 48x48 image
     # (-1) will infer number of rows from (48) columns
-    return np.reshape(arr, (-1, 48))
+    return face
 
 EMOTIONS = {
     0:"angry",
@@ -43,11 +44,21 @@ train_dir = "./data/train.csv"
 df = pd.read_csv(train_dir)
 
 # convert pixel strings into 2d numpy arrays
-faces = df['pixels'].apply(string_to_image)
+#faces = df['pixels'].apply(string_to_image)
+
+pixels = df['pixels'].tolist()
+faces = []
+for sequence in pixels:
+    face = [int(pixel) for pixel in sequence.split()]
+    face = np.asarray(face).reshape(48, 48)
+    face = cv2.resize(face.astype('uint8'), (48, 48))
+    faces.append(face.astype('float32'))
+
 
 #expand the channel dimension of each image
 faces = np.asarray(faces)
 faces = np.expand_dims(faces, -1)
+
 
 #convert labels to categorical matrix
 emotions = pd.get_dummies(df['emotion']).values
