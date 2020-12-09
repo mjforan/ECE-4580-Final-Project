@@ -10,13 +10,13 @@ while True:
 
     faces = face_classifier.detectMultiScale(gray, 1.3, 5)
     for (x, y, w, h) in faces:
-        cv2.imshow("face", cv2.resize(frame[y:y + h, x:x + w], (48, 48)))
+        cv2.imshow("face", cv2.resize(gray[y:y + h, x:x + w], (48, 48)))
         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
         roi_gray = gray[y:y + h, x:x + w]
 
         eyes = eye_classifier.detectMultiScale(roi_gray)
         if len(eyes) > 2:
-            eyes = filter(lambda eye: eye[1] < len(roi_gray) / 2 and min(eye[2], eye[3]) > len(roi_gray) / 4, eyes)
+            eyes = filter(lambda eye: eye[1] < len(roi_gray) / 2 , eyes) #and min(eye[2], eye[3]) > len(roi_gray) / 4
         for (ex, ey, ew, eh) in eyes:
             cv2.rectangle(frame, (x + ex, y + ey), (x + ex + ew, y + ey + eh), (0, 255, 0), 2)
         cv2.putText(frame, "yikes", (x + int((w / 2)), y + 25), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
