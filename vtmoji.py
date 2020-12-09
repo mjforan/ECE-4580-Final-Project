@@ -99,7 +99,8 @@ os.makedirs(tb_logdir)
 tb = TensorBoard(log_dir=tb_logdir)
 callbacks.append(tb)
 
-checkpointer = ModelCheckpoint(tb_logdir, monitor='val_loss', verbose=True, save_best_only=True)
+checkpoint_fpath = os.path.join(tb_logdir, f"checkpoint_{epoch:02d}")
+checkpointer = ModelCheckpoint(checkpoint_fpath, monitor='val_loss', verbose=True, save_best_only=True)
 callbacks.append(checkpointer)
 
 # train the model
