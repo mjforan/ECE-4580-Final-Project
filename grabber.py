@@ -4,21 +4,15 @@ import cv2
 import math
 
 model = keras.models.load_model("./vt-moji-0")
-EMOTIONS = {
-    0:"angry",
-    1:"disgust",
-    2:"fear",
-    3:"happy",
-    4:"sad",
-    5:"surprise",
-    6:"neutral"
-}
+emoji = [{"label": label, "image": cv2.imread("./emoji/"+label + ".webp")} for label in
+         ["angry", "disgust", "fear", "happy", "sad", "surprise", "neutral"]]
+print(emoji)
 
 def predict_image(input_image):
-  expanded_image = np.expand_dims(input_image, 0)
-  expanded_image = np.expand_dims(expanded_image, -1)
-  results = model.predict(expanded_image)[0]
-  return EMOTIONS[list(results).index(max(results))]
+    expanded_image = np.expand_dims(input_image, 0)
+    expanded_image = np.expand_dims(expanded_image, -1)
+    results = model.predict(expanded_image)[0]
+    return emoji[list(results).index(max(results))]
 
 
 face_classifier = cv2.CascadeClassifier("./haarcascade_frontalface_default.xml")
@@ -50,8 +44,9 @@ while True:
 
             for (ex, ey, ew, eh) in eyes:
                 cv2.rectangle(frame, (x + ex, y + ey), (x + ex + ew, y + ey + eh), (0, 255, 0), 2)
-        cv2.putText(frame, predict_image(cv2.resize(rotated[y:y + h, x:x + w], (48,48))), (x + int((w / 2)), y + 25), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
-
+            prediction = predict_image(cv2.resize(rotated[y:y + h, x:x + w], (48, 48)))
+            cv2.putText(frame, prediction["label"], (x + int((w / 2)), y + 25), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
+            frame[0:480, 0:480] = prediction["image"]
     cv2.imshow('Labeled', frame)
     if cv2.waitKey(1) == 13:  # Enter key kills program
         break
