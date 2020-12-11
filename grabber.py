@@ -33,9 +33,8 @@ while True:
         if x < 0 or y < 0 or x + w >= frame.shape[0] or y + h >= frame.shape[1]:
             continue
 
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
         roi_gray = gray[y:y + h, x:x + w]
-
+        cv2.imshow("hidden face", frame[y:y+h, x:x+w])
         eyes = eye_classifier.detectMultiScale(roi_gray)
         if len(eyes) > 2:
             eyes = list(filter(lambda eye: eye[1] < len(roi_gray) / 2, eyes))
@@ -49,22 +48,27 @@ while True:
             rotation = cv2.getRotationMatrix2D((x + eyes[0][0], y + eyes[0][1]), theta / math.pi * 180, 1.0)
             rotated = cv2.warpAffine(gray, rotation, gray.shape)
 
-            for (ex, ey, ew, eh) in eyes:
-                cv2.rectangle(frame, (x + ex, y + ey), (x + ex + ew, y + ey + eh), (0, 255, 0), 2)
             prediction = predict_image(cv2.resize(rotated[y:y + h, x:x + w], (48, 48)))
-            cv2.putText(frame, prediction["label"], (x + int((w / 2)), y + 25), cv2.FONT_HERSHEY_SIMPLEX, 2,
-                        (0, 255, 0), 3)
             em_img = prediction["image"]
+
+            side = em_img.shape[0]
+            rotation = np.append(cv2.getRotationMatrix2D((side / 2, side / 2), -theta / math.pi * 180, 1.0),
+                                 np.array([[0, 0, 1]]), axis=0)
+            rotated = cv2.warpPerspective(em_img[..., :3], rotation, (side, side))
 
             scale = np.linalg.norm(eyes[1] - eyes[0]) / np.linalg.norm(prediction["eyes"][1] - prediction["eyes"][0])
             if scale == 0:
                 continue
             side = int(em_img.shape[0] * scale)
+            new_eye = (np.dot(rotation, np.append(np.array(prediction["eyes"][0]), 1).T) * scale).astype(int)
             em_img_resized = cv2.resize(em_img, (side, side))
             mask = em_img_resized[..., 3:] / 255.0
-            frame[:side, :side] = (1.0 - mask) * frame[:side, :side] + mask * em_img_resized[..., :3]
+            x = int(x + eyes[0][0] + eyes[0][2] / 2 - new_eye[0])
+            y = int(y + eyes[0][1] + eyes[0][3] / 3 - new_eye[1])
+            frame[y:y + side, x:x + side] = (1.0 - mask) * frame[y:y + side, x:x + side] + mask * em_img_resized[...,
+                                                                                                  :3]
 
-    cv2.imshow('Labeled', frame)
+    cv2.imshow("VT-moji", frame)
     if cv2.waitKey(1) == 13:  # Enter key kills program
         break
 
