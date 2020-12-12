@@ -2,6 +2,7 @@ import keras
 import numpy as np
 import cv2
 import math
+from histQueue import HistoryQueue
 from collections import Counter
 
 model = keras.models.load_model("./vt-moji-0")
@@ -27,24 +28,14 @@ def get_prediction_from_label(label):
         if e["label"] == label:
             return e
 
-def most_common(arr):
-    # print("Array: ", arr)
-    occurences = Counter(arr)
-    return occurences.most_common(1)[0][0]
-
-def moving_average(arr):
-    average = np.mean(arr, axis=0)
-    return average
-
 face_classifier = cv2.CascadeClassifier("./haarcascade_frontalface_default.xml")
 eye_classifier = cv2.CascadeClassifier("./haarcascade_eye.xml")
 cap = cv2.VideoCapture(0)
 
 #
-eyes_history = [None]*20
-pred_history = [None]*60
+eyes_history = HistoryQueue(7, lambda arr: np.mean(arr, axis=0))
+pred_history = HistoryQueue(7, lambda arr: get_prediction_from_label(Counter(arr).most_common(1)[0][0]))
 frameCount = 0
-start_Predict = False
 while True:
 
     ret, frame = cap.read()
@@ -63,10 +54,8 @@ while True:
             # select the two largest eyes and sort them by x-coordinate. The result will be [left_eye, right_eye]
             eyes = sorted(sorted(eyes, key=lambda eye: eye[2]*eye[3])[:2], key=lambda eye: eye[0])
             #keeps track of eye positions for the past 20 frames
-            print("EYES:", eyes)
-            eyes_history[frameCount%20] = np.array(eyes)
-            if frameCount > 20:
-                eyes = moving_average(eyes_history)
+            eyes_history.push(np.array(eyes))
+            eyes = eyes_history.getFiltered()
             # rotate the face so that the line connecting the two eyes is horizontal
             theta = math.atan2((eyes[0][1] - eyes[1][1]), (eyes[0][0] - eyes[1][0]))
             if 1 / 4 * math.pi < abs(theta) < 7 / 4 * math.pi:
@@ -78,15 +67,12 @@ while True:
             try:
                 prediction = predict_image(cv2.resize(rotated[y:y + h, x:x + w], (48, 48)))
                 #keeps track of predictions for the past 20 frames
-                pred_history[frameCount%60] =  prediction["label"]
-                if None not in pred_history:
-                    prediction = get_prediction_from_label(most_common(pred_history))
+                pred_history.push(prediction["label"])
+                prediction = pred_history.getFiltered()
             except cv2.error:
                 # This has something to do with the face going over the right edge of the image, but I'm too tired to figure it out
                 continue
-
             em_img = prediction["image"]
-
             side = em_img.shape[0]
             # Rotate the emoji image - no need to resize since it's circular
             rotation = np.append(cv2.getRotationMatrix2D((side / 2, side / 2), -theta / math.pi * 180, 1.0), np.array([[0, 0, 1]]), axis=0)
@@ -106,9 +92,10 @@ while True:
             x += cut[0];  y += cut[1];  w = side - cut[0] - cut[2];  h = side - cut[1] - cut[3]
             # Apply the alpha mask so only the circular emoji appears over the frame image
             frame[y:y+h, x:x+w, :] = (1.0 - mask[cut[1]:cut[1]+h, cut[0]:cut[0]+w]) * frame[y:y+h, x:x+w] + mask[cut[1]:cut[1]+h, cut[0]:cut[0]+w] * em_img_resized[cut[1]:cut[1]+h, cut[0]:cut[0]+w, :3]
-
+        else:
+            eyes_history.pop()
+            pred_history.pop()
     cv2.imshow("VT-moji", frame)
-    frameCount += 1
     if cv2.waitKey(1) == 13:  # Enter key kills program
         break
 
