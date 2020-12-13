@@ -12,9 +12,13 @@ Then, to execute the program, call
 python vt-moji.py
 ```
 
-During the course of this project, we trained a convolutional neural network model which is stored in [vt-moji-0](./vt-moji-0). The below sections detail relevant information should you wish to replicate the neural network training yourself. 
+## Version info
+
+This project was executed on Window 64-bit operating system with Python 3.7 64-bit installed. Due to package dependencies, especially with Tensorflow 2, this project will not run with a Python 32-bit installation
 
 ## Training the Convolutional Neural Network
+
+During the course of this project, we trained a convolutional neural network model which is stored in [vt-moji-0](./vt-moji-0). The below sections detail relevant information should you wish to replicate the neural network training yourself. 
 
 ### Obtaining Labelled Data
 The CNN was trained using the open-source Facial Expression Recognition (FER2013) dataset available through here: [Facial Expression Recognition Challenge](https://www.kaggle.com/c/challenges-in-representation-learning-facial-expression-recognition-challenge/data). Kaggle is a widely used hub for machine learning competitions. If you wish to replicate the training, you must download the dataset from here, by making a free Kaggle account and verifying your email. 
