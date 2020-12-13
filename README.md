@@ -5,6 +5,9 @@ VT-Moji is a facial recognition and emotion detection project that uses a Haar C
 To run this project, you must first install the correct packages to your local machine by calling
 ```
 pip install -r requirements.txt
+Ensure all requirements, including python 64 bit is installed on host machine.
+Will result in issues if not.  
+
 ```
 
 Then, to execute the program, call 
