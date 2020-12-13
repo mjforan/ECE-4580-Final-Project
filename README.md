@@ -37,19 +37,15 @@ Google Colaboratory, or "Colab", is essentially a platform that can execute Jupy
 
 Thus, if you wish to replicate the training, after downloading the dataset, simply open the [training file](./training.ipynb) in Google Colab and run all the cells sequentially. 
 
+## Identifying Faces
+
 ### Filtering Faces
 
 To make sure that the emoji overlay doesn't constantly flicker and move, but follow the face at a normal rate,
-
 we developed a class called a HistoryQueue that stored recent results of the face-grabbing algorithm, including
-
 the seven previous labels and eye coordinates.  By taking a moving/running average of these eye coordinates, we
-
 were able to prevent the emoji from dragging across the screen as the face moved, and instead merely shift across
-
 without noticeable delay/noise.  In addition, by keeping track of the recent emoji labels in the history class,
-
-we were able to make sure that the emoji wasn't consantly changing due to slight changes in the users face, and merely
-
+we were able to make sure that the emoji wasn't consantly changing due to slight changes in the users face, and merely 
 displayed the emoji with the most common label for that set of frames.
 
